@@ -3,11 +3,9 @@ const Transport = require("../models/Transport");
 const isValidPayload = (body) => {
   const required = [
     "truck_number",
-    "driver_name",
-    "origin",
-    "destination",
     "gross_weight_kg",
     "tare_weight_kg",
+    "discount_kg",
     "unit_price"
   ];
 
@@ -19,14 +17,23 @@ const isValidPayload = (body) => {
 
   const gross = Number(body.gross_weight_kg);
   const tare = Number(body.tare_weight_kg);
+  const cargoWeight =
+    body.cargo_weight_kg === undefined || body.cargo_weight_kg === null || body.cargo_weight_kg === ""
+      ? gross - tare
+      : Number(body.cargo_weight_kg);
+  const discount = Number(body.discount_kg);
   const unitPrice = Number(body.unit_price);
 
-  if ([gross, tare, unitPrice].some((n) => Number.isNaN(n))) {
-    return "Gross, tare and unit price must be numbers";
+  if ([gross, tare, cargoWeight, discount, unitPrice].some((n) => Number.isNaN(n))) {
+    return "Og'irliklar va narx son bo'lishi kerak";
   }
 
   if (gross < tare) {
     return "Gross weight cannot be smaller than tare weight";
+  }
+
+  if (cargoWeight < discount) {
+    return "Yuklangan yuk skintkadan kichik bo'lmasligi kerak";
   }
 
   return null;
@@ -36,15 +43,14 @@ function normalizePayload(body) {
   return {
     transport_date: body.transport_date ? new Date(body.transport_date) : new Date(),
     truck_number: String(body.truck_number || "").trim(),
-    driver_name: String(body.driver_name || "").trim(),
-    cargo_name: String(body.cargo_name || "Temir").trim(),
-    origin: String(body.origin || "").trim(),
-    destination: String(body.destination || "").trim(),
     gross_weight_kg: Number(body.gross_weight_kg),
     tare_weight_kg: Number(body.tare_weight_kg),
+    cargo_weight_kg:
+      body.cargo_weight_kg === undefined || body.cargo_weight_kg === null || body.cargo_weight_kg === ""
+        ? Math.max(Number(body.gross_weight_kg) - Number(body.tare_weight_kg), 0)
+        : Number(body.cargo_weight_kg),
+    discount_kg: Number(body.discount_kg),
     unit_price: Number(body.unit_price),
-    currency: body.currency === "USD" ? "USD" : "UZS",
-    note: String(body.note || "").trim()
   };
 }
 
@@ -117,6 +123,10 @@ exports.getStats = async (req, res) => {
         $group: {
           _id: null,
           totalTrips: { $sum: 1 },
+          totalGrossWeight: { $sum: "$gross_weight_kg" },
+          totalTareWeight: { $sum: "$tare_weight_kg" },
+          totalCargoWeight: { $sum: "$cargo_weight_kg" },
+          totalDiscountWeight: { $sum: "$discount_kg" },
           totalNetWeight: { $sum: "$net_weight_kg" },
           totalPrice: { $sum: "$total_price" },
           avgUnitPrice: { $avg: "$unit_price" }
@@ -127,6 +137,10 @@ exports.getStats = async (req, res) => {
     res.json(
       stats[0] || {
         totalTrips: 0,
+        totalGrossWeight: 0,
+        totalTareWeight: 0,
+        totalCargoWeight: 0,
+        totalDiscountWeight: 0,
         totalNetWeight: 0,
         totalPrice: 0,
         avgUnitPrice: 0

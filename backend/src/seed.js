@@ -23,60 +23,21 @@ const trucks = [
   "60M774FA",
 ];
 
-const drivers = [
-  "Javlon",
-  "Bekzod",
-  "Sardor",
-  "Aziz",
-  "Bekmurod",
-  "Rustam",
-  "Dilshod",
-  "Anvar",
-  "Shaxzod",
-  "Murod",
-  "Said",
-  "Islom",
-  "Oybek",
-  "Sherzod",
-  "Azamat",
-  "Nodir",
-  "Jasur",
-  "Komil",
-  "Akmal",
-  "Farhod",
-];
-
-const destinations = [
-  "Toshkent",
-  "Chirchiq",
-  "Angren",
-  "Bekobod",
-  "Navoiy",
-  "Jizzax",
-  "Samarqand",
-  "Andijon",
-  "Namangan",
-  "Farg'ona",
-];
-
 function makeSeedItem(index) {
   const gross = 980 + index * 20;
   const tare = 320 + (index % 5) * 5;
+  const cargoWeight = Math.max(gross - tare, 0);
+  const discount = index % 3 === 0 ? 0 : index % 4;
   const unitPrice = 30 + (index % 4) * 2;
-  const cargoName = index % 2 === 0 ? "Temir" : "Metal";
 
   return {
     transport_date: new Date(Date.now() - index * 86400000),
     truck_number: trucks[index],
-    driver_name: drivers[index],
-    cargo_name: cargoName,
-    origin: "Zavod",
-    destination: destinations[index % destinations.length],
     gross_weight_kg: gross,
     tare_weight_kg: tare,
+    cargo_weight_kg: cargoWeight,
+    discount_kg: discount,
     unit_price: unitPrice,
-    currency: "UZS",
-    note: `Namuna kirim #${index + 1}`,
   };
 }
 
