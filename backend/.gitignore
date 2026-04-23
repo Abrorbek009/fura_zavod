@@ -1,0 +1,5 @@
+node_modules
+backend.log
+backend.err
+.env
+dist
